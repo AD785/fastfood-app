@@ -2,6 +2,7 @@ import streamlit as st
 import psycopg2
 from datetime import datetime
 import pandas as pd
+import os
 
 # ================= CONFIG =================
 DB_NAME = st.secrets["DB_NAME"]
@@ -13,16 +14,22 @@ DB_PORT = "5432"
 ADMIN_USER = "admin"
 ADMIN_PASS = "1234"
 
-# ================= MENU AVEC IMAGES =================
+# ================= IMAGE SAFE =================
+def safe_image(path):
+    if os.path.exists(path):
+        return path
+    return "https://via.placeholder.com/300?text=Image+indisponible"
+
+# ================= MENU =================
 MENU = {
-  'Koki + Banane': (2000, 'images/image1.jpeg'),
+    'Koki + Banane': (2000, 'images/image1.jpeg'),
     'Eru': (2500, 'images/image2.jpeg'),
     'Okok + Tubercule de Manioc': (2200, 'images/image3.jpeg'),
     'Riz + Poulet + Sauce': (3000, 'images/image4.jpeg'),
     'Riz Sauté + Poulet Braisé': (3500, 'images/image5.jpeg'),
     'Ndole': (1800, 'images/image6.jpg'),
     'Banane Malaxé': (2800, 'images/image7.jpeg'),
-    'Taro + Sauce Jaune': (4000, 'images/8.jpg'),
+    'Taro + Sauce Jaune': (4000, 'images/image8.jpg'),
 }
 
 # ================= DB =================
@@ -58,23 +65,22 @@ def init_db():
 
 init_db()
 
+# ================= NAVIGATION =================
 if "page" not in st.session_state:
     st.session_state.page = "home"
 
-# ================= HOME AVEC IMAGES =================
+# ================= HOME =================
 def home():
     st.title("🍔 K-MERFOOD")
     st.subheader("Nos plats")
 
     cols = st.columns(4)
 
-    i = 0
-    for plat, (prix, img) in MENU.items():
+    for i, (plat, (prix, img)) in enumerate(MENU.items()):
         with cols[i % 4]:
-            st.image(img, use_container_width=True)
+            st.image(safe_image(img), use_container_width=True)
             st.markdown(f"**{plat}**")
             st.write(f"{prix} FCFA")
-        i += 1
 
     st.divider()
 
@@ -100,9 +106,13 @@ def commande():
     plat = st.selectbox("Plat", list(MENU.keys()))
     qte = st.number_input("Quantité", min_value=1)
 
-    st.image(MENU[plat][1], width=300)
+    st.image(safe_image(MENU[plat][1]), width=300)
 
     if st.button("Valider"):
+        if not nom or not prenom or not loc:
+            st.warning("Remplis tous les champs")
+            return
+
         prix = MENU[plat][0] * qte
 
         conn = get_conn()
@@ -153,7 +163,7 @@ def dashboard():
         return
 
     st.metric("Total commandes", len(df))
-    st.metric("Chiffre total", df["prix"].sum())
+    st.metric("Chiffre total", int(df["prix"].sum()))
 
     st.dataframe(df)
 
