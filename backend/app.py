@@ -22,14 +22,14 @@ def safe_image(path):
 
 # ================= MENU =================
 MENU = {
-    'Koki + Banane': (2000, 'images/image1.jpeg'),
-    'Eru': (2500, 'images/image2.jpeg'),
-    'Okok + Tubercule de Manioc': (2200, 'images/image3.jpeg'),
-    'Riz + Poulet + Sauce': (3000, 'images/image4.jpeg'),
-    'Riz Sauté + Poulet Braisé': (3500, 'images/image5.jpeg'),
-    'Ndole': (1800, 'images/image6.jpg'),
-    'Banane Malaxé': (2800, 'images/image7.jpeg'),
-    'Taro + Sauce Jaune': (4000, 'images/image8.jpg'),
+    'Koki + Banane': (2000, 'image.jpg/image1.jpeg'),
+    'Eru': (2500, 'image.jpg/image2.jpeg'),
+    'Okok + Tubercule de Manioc': (2200, 'image.jpg/image3.jpeg'),
+    'Riz + Poulet + Sauce': (3000, 'image.jpg/image4.jpeg'),
+    'Riz Sauté + Poulet Braisé': (3500, 'image.jpg/image5.jpeg'),
+    'Ndole': (1800, 'image.jpg/image6.jpg'),
+    'Banane Malaxé': (2800, 'image.jpg/image7.jpeg'),
+    'Taro + Sauce Jaune': (4000, 'image.jpg/image8.jpg'),
 }
 
 # ================= DB =================
