@@ -22,7 +22,7 @@ def safe_image(path):
 
 # ================= MENU =================
 MENU = {
-    'Koki + Banane': (2000, 'image.jpg/image(1).jpeg'),
+    'Koki + Banane': (2000, 'https://www.facebook.com/100070331942704/posts/2669937416563027/?locale=fr_FR'),
     'Eru': (2500, 'image.jpg/image2.jpeg'),
     'Okok + Tubercule de Manioc': (2200, 'image.jpg/image3.jpeg'),
     'Riz + Poulet + Sauce': (3000, 'image.jpg/image4.jpeg'),
