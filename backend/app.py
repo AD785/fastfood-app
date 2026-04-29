@@ -13,7 +13,7 @@ DB_PORT = "5432"
 ADMIN_USER = "admin"
 ADMIN_PASS = "1234"
 
-# ================= BACKGROUND =================
+# ================= BACKGROUND GLOBAL =================
 def set_bg():
     st.markdown(
         """
@@ -26,7 +26,7 @@ def set_bg():
         }
 
         .block-container {
-            background-color: rgba(0, 0, 0, 0.65);
+            background-color: rgba(0, 0, 0, 0.7);
             padding: 2rem;
             border-radius: 15px;
         }
@@ -39,16 +39,19 @@ def set_bg():
         unsafe_allow_html=True
     )
 
-# ================= MENU =================
+# appliquer le fond partout
+set_bg()
+
+# ================= MENU (SANS IMAGES) =================
 MENU = {
-    "Koki + Banane": (2000, "https://images.unsplash.com/photo-1604908176997-4319b60c2f3c?auto=format&fit=crop&w=600&q=80"),
-    "Eru": (2500, "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80"),
-    "Okok + Manioc": (2200, "https://images.unsplash.com/photo-1600891964599-f61ba0e24092?auto=format&fit=crop&w=600&q=80"),
-    "Riz + Poulet": (3000, "https://images.unsplash.com/photo-1604908554007-9f5bfa2b4c5b?auto=format&fit=crop&w=600&q=80"),
-    "Riz sauté + Poulet": (3500, "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=600&q=80"),
-    "Ndole": (1800, "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80"),
-    "Banane malaxée": (2800, "https://images.unsplash.com/photo-1589302168068-964664d93dc0?auto=format&fit=crop&w=600&q=80"),
-    "Taro + Sauce jaune": (4000, "https://images.unsplash.com/photo-1604908177522-402be3e38c60?auto=format&fit=crop&w=600&q=80")
+    "Koki + Banane": 2000,
+    "Eru": 2500,
+    "Okok + Manioc": 2200,
+    "Riz + Poulet": 3000,
+    "Riz sauté + Poulet": 3500,
+    "Ndole": 1800,
+    "Banane malaxée": 2800,
+    "Taro + Sauce jaune": 4000
 }
 
 # ================= DB =================
@@ -93,13 +96,9 @@ def home():
     st.title("🍔 K-MERFOOD")
     st.subheader("Nos plats")
 
-    cols = st.columns(4)
-
-    for i, (plat, (prix, img)) in enumerate(MENU.items()):
-        with cols[i % 4]:
-            st.image(img, use_container_width=True)
-            st.markdown(f"**{plat}**")
-            st.write(f"{prix} FCFA")
+    for plat, prix in MENU.items():
+        st.markdown(f"### 🍽️ {plat}")
+        st.write(f"💰 {prix} FCFA")
 
     st.divider()
 
@@ -125,14 +124,12 @@ def commande():
     plat = st.selectbox("Plat", list(MENU.keys()))
     qte = st.number_input("Quantité", min_value=1)
 
-    st.image(MENU[plat][1], width=300)
-
     if st.button("Valider"):
         if not nom or not prenom or not loc:
             st.warning("Remplis tous les champs")
             return
 
-        prix = MENU[plat][0] * qte
+        prix = MENU[plat] * qte
 
         conn = get_conn()
         cur = conn.cursor()
@@ -155,9 +152,7 @@ def commande():
 
 # ================= LOGIN =================
 def login():
-    set_bg()
-
-    st.title("🔐 Admin Login")
+    st.title("🔐 Admin")
 
     u = st.text_input("Utilisateur")
     p = st.text_input("Mot de passe", type="password")
