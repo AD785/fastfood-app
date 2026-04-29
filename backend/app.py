@@ -1,22 +1,188 @@
-from flask import Flask, request, jsonify
-import sqlite3, datetime
-app=Flask(__name__)
-DB='database.db'
+import streamlit as st
+import psycopg2
+from datetime import datetime
+import pandas as pd
+
+# ================= CONFIG =================
+DB_NAME = st.secrets["DB_NAME"]
+DB_USER = st.secrets["DB_USER"]
+DB_PASS = st.secrets["DB_PASS"]
+DB_HOST = st.secrets["DB_HOST"]
+DB_PORT = "5432"
+
+ADMIN_USER = "admin"
+ADMIN_PASS = "1234"
+
+# ================= MENU AVEC IMAGES =================
+MENU = {
+  'Koki + Banane': (2000, 'images/image1.jpeg'),
+    'Eru': (2500, 'images/image2.jpeg'),
+    'Okok + Tubercule de Manioc': (2200, 'images/image3.jpeg'),
+    'Riz + Poulet + Sauce': (3000, 'images/image4.jpeg'),
+    'Riz Sauté + Poulet Braisé': (3500, 'images/image5.jpeg'),
+    'Ndole': (1800, 'images/image6.jpg'),
+    'Banane Malaxé': (2800, 'images/image7.jpeg'),
+    'Taro + Sauce Jaune': (4000, 'images/8.jpg'),
+}
+
+# ================= DB =================
+def get_conn():
+    return psycopg2.connect(
+        dbname=DB_NAME,
+        user=DB_USER,
+        password=DB_PASS,
+        host=DB_HOST,
+        port=DB_PORT,
+        sslmode="require"
+    )
 
 def init_db():
-    with sqlite3.connect(DB) as c:
-        c.execute('CREATE TABLE IF NOT EXISTS orders(id INTEGER PRIMARY KEY, nom TEXT, localisation TEXT, plat TEXT, quantite INTEGER, created_at TEXT)')
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS commandes(
+        id SERIAL PRIMARY KEY,
+        nom TEXT,
+        prenom TEXT,
+        localisation TEXT,
+        plat TEXT,
+        quantite INTEGER,
+        prix INTEGER,
+        created_at TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
 init_db()
 
-@app.route('/api/orders', methods=['GET','POST'])
-def orders():
-    if request.method=='POST':
-        d=request.json
-        with sqlite3.connect(DB) as c:
-            c.execute('INSERT INTO orders(nom,localisation,plat,quantite,created_at) VALUES(?,?,?,?,?)',(d['nom'],d['localisation'],d['plat'],d['quantite'],datetime.datetime.now().isoformat()))
-        return jsonify({'ok':True})
-    with sqlite3.connect(DB) as c:
-        rows=c.execute('SELECT nom,localisation,plat,quantite,created_at FROM orders ORDER BY id DESC').fetchall()
-    return jsonify([{'nom':r[0],'localisation':r[1],'plat':r[2],'quantite':r[3],'created_at':r[4]} for r in rows])
+if "page" not in st.session_state:
+    st.session_state.page = "home"
 
-app.run(debug=True)
+# ================= HOME AVEC IMAGES =================
+def home():
+    st.title("🍔 K-MERFOOD")
+    st.subheader("Nos plats")
+
+    cols = st.columns(4)
+
+    i = 0
+    for plat, (prix, img) in MENU.items():
+        with cols[i % 4]:
+            st.image(img, use_container_width=True)
+            st.markdown(f"**{plat}**")
+            st.write(f"{prix} FCFA")
+        i += 1
+
+    st.divider()
+
+    col1, col2, col3 = st.columns(3)
+
+    if col1.button("🛒 Commander"):
+        st.session_state.page = "commande"
+
+    if col2.button("🔐 Admin"):
+        st.session_state.page = "login"
+
+    if col3.button("📊 Analyse"):
+        st.session_state.page = "analyse"
+
+# ================= COMMANDE =================
+def commande():
+    st.title("🛒 Commander")
+
+    nom = st.text_input("Nom")
+    prenom = st.text_input("Prénom")
+    loc = st.text_input("Localisation")
+
+    plat = st.selectbox("Plat", list(MENU.keys()))
+    qte = st.number_input("Quantité", min_value=1)
+
+    st.image(MENU[plat][1], width=300)
+
+    if st.button("Valider"):
+        prix = MENU[plat][0] * qte
+
+        conn = get_conn()
+        cur = conn.cursor()
+
+        cur.execute("""
+        INSERT INTO commandes(nom,prenom,localisation,plat,quantite,prix,created_at)
+        VALUES (%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            nom, prenom, loc, plat, qte, prix,
+            datetime.now().isoformat()
+        ))
+
+        conn.commit()
+        conn.close()
+
+        st.success("Commande enregistrée ✅")
+
+    if st.button("⬅ Retour"):
+        st.session_state.page = "home"
+
+# ================= LOGIN =================
+def login():
+    st.title("🔐 Admin")
+
+    u = st.text_input("Utilisateur")
+    p = st.text_input("Mot de passe", type="password")
+
+    if st.button("Connexion"):
+        if u == ADMIN_USER and p == ADMIN_PASS:
+            st.session_state.page = "dashboard"
+        else:
+            st.error("Accès refusé")
+
+    if st.button("⬅ Retour"):
+        st.session_state.page = "home"
+
+# ================= DASHBOARD =================
+def dashboard():
+    st.title("📊 Dashboard")
+
+    conn = get_conn()
+    df = pd.read_sql("SELECT * FROM commandes", conn)
+    conn.close()
+
+    if df.empty:
+        st.warning("Aucune donnée")
+        return
+
+    st.metric("Total commandes", len(df))
+    st.metric("Chiffre total", df["prix"].sum())
+
+    st.dataframe(df)
+
+    if st.button("⬅ Retour"):
+        st.session_state.page = "home"
+
+# ================= ANALYSE =================
+def analyse():
+    st.title("📊 Analyse")
+
+    conn = get_conn()
+    df = pd.read_sql("SELECT * FROM commandes", conn)
+    conn.close()
+
+    if not df.empty:
+        df["date"] = pd.to_datetime(df["created_at"]).dt.date
+        st.bar_chart(df.groupby("date")["prix"].sum())
+
+    if st.button("⬅ Retour"):
+        st.session_state.page = "home"
+
+# ================= ROUTER =================
+if st.session_state.page == "home":
+    home()
+elif st.session_state.page == "commande":
+    commande()
+elif st.session_state.page == "login":
+    login()
+elif st.session_state.page == "dashboard":
+    dashboard()
+elif st.session_state.page == "analyse":
+    analyse()
